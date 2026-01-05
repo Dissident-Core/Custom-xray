@@ -1,28 +1,39 @@
-# This workflow will build a golang project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
-name: Go
+name: Build xray windows
 
 on:
+  workflow_dispatch: 
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
 
 jobs:
-
-  build:
+  build-windows:
     runs-on: ubuntu-latest
+    
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.20'
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          check-latest: true
 
-    - name: Build
-      run: go build -v ./...
+      - name: Download Dependencies
+        run: |
+          go mod tidy
 
-    - name: Test
-      run: go test -v ./...
+      - name: Build Xray (.exe)
+        env:
+          CGO_ENABLED: 0   
+          GOOS: windows    
+          GOARCH: amd64
+        run: |
+          go build -o xray_custom.exe -trimpath -ldflags "-s -w -buildid=" ./main
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Custom-Xray
+          path: Custom-Xray.exe
+          retention-days: 3
